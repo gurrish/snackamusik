@@ -2,6 +2,8 @@
 
 A personal album journal: browse records, see cover photography, and read my notes on the music, artwork and value. Anyone can read the journal; only the configured administrator email address(es) can add, edit or remove albums.
 
+The website is in Swedish and is intended for a Swedish-speaking audience.
+
 ## Stack
 
 - React, TypeScript and Vite.

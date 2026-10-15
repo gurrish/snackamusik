@@ -3,7 +3,7 @@ import { z } from "zod";
 const artworkInput = z.object({
   name: z.string().trim().min(1).max(180),
   contentType: z.enum(["image/jpeg", "image/png", "image/webp"]),
-  base64: z.string().min(1).max(11_184_812).regex(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/, "Artwork must be valid base64."),
+  base64: z.string().min(1).max(11_184_812).regex(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/, "Bilden har ett ogiltigt format."),
 }).strict();
 
 const albumFields = {

@@ -6,6 +6,8 @@ snackamusik is a personal, public-facing album journal. Visitors can browse reco
 
 The frontend is React, TypeScript and Vite. The backend is an Azure Functions API integrated with Azure Static Web Apps. Album metadata is persisted in Azure Table Storage; cover images are in a private Azure Blob Storage container. Azure resources are provisioned with Bicep and deployed using GitHub Actions with OIDC.
 
+The website is exclusively for a Swedish audience: all visible interface text, accessibility labels, validation messages, and page metadata must be in Swedish. Do not add language switching or English UI copy.
+
 ## Project structure
 
 - `src/App.tsx`: record shelf, album detail view, and admin editor.

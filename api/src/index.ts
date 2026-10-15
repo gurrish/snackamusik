@@ -41,8 +41,8 @@ function isAdmin(email: string | undefined): boolean {
 
 function requireAdmin(request: HttpRequest) {
   const actor = identity(request);
-  if (!actor) throw new HttpError(401, "Sign in before making changes.");
-  if (!isAdmin(actor.email)) throw new HttpError(403, "This account is not allowed to edit the record journal.");
+  if (!actor) throw new HttpError(401, "Logga in för att göra ändringar.");
+  if (!isAdmin(actor.email)) throw new HttpError(403, "Det här kontot har inte behörighet att redigera skivdagboken.");
   return actor;
 }
 
@@ -54,13 +54,13 @@ async function readBody(request: HttpRequest): Promise<unknown> {
   try {
     return await request.json();
   } catch {
-    throw new HttpError(400, "Request body must be valid JSON.");
+    throw new HttpError(400, "Begäran innehåller ogiltig JSON.");
   }
 }
 
 function parseArtwork(input: ArtworkInput): Artwork {
   const bytes = Buffer.from(input.base64, "base64");
-  if (!bytes.length || bytes.length > 8 * 1024 * 1024) throw new HttpError(400, "Artwork must be smaller than 8 MB.");
+  if (!bytes.length || bytes.length > 8 * 1024 * 1024) throw new HttpError(400, "Bilden måste vara högst 8 MB.");
   const signatures: Record<ArtworkInput["contentType"], number[]> = {
     "image/jpeg": [0xff, 0xd8, 0xff],
     "image/png": [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a],
@@ -69,7 +69,7 @@ function parseArtwork(input: ArtworkInput): Artwork {
   const signature = signatures[input.contentType];
   if (!signature.every((byte, index) => bytes[index] === byte)
     || (input.contentType === "image/webp" && bytes.toString("ascii", 8, 12) !== "WEBP")) {
-    throw new HttpError(400, "The uploaded file does not match its image format.");
+    throw new HttpError(400, "Den uppladdade filen stämmer inte överens med bildformatet.");
   }
   return { bytes, contentType: input.contentType };
 }
@@ -82,14 +82,14 @@ function responsePath(pathname: string): string[] {
   try {
     return pathname.split("/").filter(Boolean).map(decodeURIComponent);
   } catch {
-    throw new HttpError(400, "The URL contains invalid encoding.");
+    throw new HttpError(400, "Adressen innehåller ogiltig kodning.");
   }
 }
 
 export async function handle(request: HttpRequest, context: InvocationContext): Promise<Response> {
   try {
     const [api, resource, id, action] = responsePath(new URL(request.url).pathname);
-    if (api !== "api") throw new HttpError(404, "API endpoint not found.");
+    if (api !== "api") throw new HttpError(404, "API-adressen kunde inte hittas.");
     const method = request.method.toUpperCase();
     const repo = getRepository();
 
@@ -97,7 +97,7 @@ export async function handle(request: HttpRequest, context: InvocationContext): 
       const actor = identity(request);
       return json({ signedIn: Boolean(actor), email: actor?.email ?? null, isAdmin: isAdmin(actor?.email) });
     }
-    if (resource !== "albums") throw new HttpError(404, "API endpoint not found.");
+    if (resource !== "albums") throw new HttpError(404, "API-adressen kunde inte hittas.");
     if (!id && method === "GET") {
       const albums = await repo.listAlbums();
       albums.sort((first, second) => second.createdAt.localeCompare(first.createdAt));
@@ -105,9 +105,9 @@ export async function handle(request: HttpRequest, context: InvocationContext): 
     }
     if (id && action === "artwork" && method === "GET") {
       const album = await repo.getAlbum(id);
-      if (!album) throw new HttpError(404, "Record not found.");
+      if (!album) throw new HttpError(404, "Skivan kunde inte hittas.");
       const artwork = await repo.readArtwork(id);
-      if (!artwork) throw new HttpError(404, "Cover image not found.");
+      if (!artwork) throw new HttpError(404, "Omslagsbilden kunde inte hittas.");
       return new Response(artwork.bytes, {
         headers: {
           "Content-Type": artwork.contentType,
@@ -119,7 +119,7 @@ export async function handle(request: HttpRequest, context: InvocationContext): 
     if (!id && method === "POST") {
       requireAdmin(request);
       const parsed = createAlbumInput.safeParse(await readBody(request));
-      if (!parsed.success) throw new HttpError(400, parsed.error.issues[0]?.message || "Album details are invalid.");
+      if (!parsed.success) throw new HttpError(400, "Kontrollera albumuppgifterna och försök igen.");
       const { artwork: artworkInput, ...details } = parsed.data;
       const album: Album = {
         id: randomUUID(),
@@ -140,9 +140,9 @@ export async function handle(request: HttpRequest, context: InvocationContext): 
     if (id && !action && method === "PUT") {
       requireAdmin(request);
       const current = await repo.getAlbum(id);
-      if (!current) throw new HttpError(404, "Record not found.");
+      if (!current) throw new HttpError(404, "Skivan kunde inte hittas.");
       const parsed = updateAlbumInput.safeParse(await readBody(request));
-      if (!parsed.success) throw new HttpError(400, parsed.error.issues[0]?.message || "Album details are invalid.");
+      if (!parsed.success) throw new HttpError(400, "Kontrollera albumuppgifterna och försök igen.");
       const { artwork: artworkInput, ...details } = parsed.data;
       const updated: Album = {
         ...current,
@@ -155,16 +155,16 @@ export async function handle(request: HttpRequest, context: InvocationContext): 
     }
     if (id && !action && method === "DELETE") {
       requireAdmin(request);
-      if (!await repo.getAlbum(id)) throw new HttpError(404, "Record not found.");
+      if (!await repo.getAlbum(id)) throw new HttpError(404, "Skivan kunde inte hittas.");
       await repo.deleteArtwork(id);
       await repo.deleteAlbum(id);
       return json({ ok: true });
     }
-    throw new HttpError(404, "API endpoint not found.");
+    throw new HttpError(404, "API-adressen kunde inte hittas.");
   } catch (error) {
     if (error instanceof HttpError) return json({ error: error.message }, error.status);
     context.error("Request failed", error);
-    return json({ error: "The request could not be completed." }, 500);
+    return json({ error: "Begäran kunde inte slutföras. Försök igen senare." }, 500);
   }
 }
 
