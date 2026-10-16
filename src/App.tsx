@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
-import { ArrowDown, ArrowRight, Disc3, LoaderCircle, LogIn, LogOut, Pencil, Plus, Search, Trash2, X } from "lucide-react";
+import { ArrowDown, ArrowRight, Disc3, LoaderCircle, LogIn, LogOut, Pencil, Plus, Search, Share2, Trash2, X } from "lucide-react";
 import { createAlbum, deleteAlbum, getAlbums, getViewer, updateAlbum } from "./lib/api";
+import { createAlbumShareImage, shareAlbum } from "./lib/share-card";
 import type { Album, AlbumInput, Viewer } from "./types";
 
 const blankForm = {
@@ -262,12 +263,47 @@ function RecordCard({ album, index, onOpen }: { album: Album; index: number; onO
 }
 
 function AlbumDialog({ album, isAdmin, onClose, onEdit, onDelete }: { album: Album; isAdmin: boolean; onClose: () => void; onEdit: () => void; onDelete: () => void }) {
+  const [sharing, setSharing] = useState(false);
+  const [preparingShare, setPreparingShare] = useState(true);
+  const [shareImage, setShareImage] = useState<Blob | null>(null);
+  const [shareError, setShareError] = useState("");
+
+  useEffect(() => {
+    let active = true;
+    setPreparingShare(true);
+    setShareImage(null);
+    setShareError("");
+    void createAlbumShareImage(album).then((blob) => {
+      if (active) setShareImage(blob);
+    }).catch((cause: unknown) => {
+      if (active) setShareError(cause instanceof Error ? cause.message : "Det gick inte att skapa delningsbilden.");
+    }).finally(() => {
+      if (active) setPreparingShare(false);
+    });
+    return () => { active = false; };
+  }, [album]);
+
+  async function handleShare() {
+    if (!shareImage) return;
+    setSharing(true);
+    setShareError("");
+    try {
+      await shareAlbum(album, shareImage);
+    } catch (cause) {
+      setShareError(cause instanceof Error ? cause.message : "Det gick inte att dela albumet.");
+    } finally {
+      setSharing(false);
+    }
+  }
+
   return <div className="modal-backdrop detail-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}><article className="detail-modal" role="dialog" aria-modal="true" aria-labelledby="detail-title">
     <button className="icon-button detail-close" onClick={onClose} aria-label="Stäng anteckningarna"><X size={20} /></button><div className="detail-art"><AlbumArtwork album={album} /></div>
     <div className="detail-copy"><span className="eyebrow">{album.format.toUpperCase()} <span className="eyebrow-divider">/</span> {album.released || "OKÄNT UTGIVNINGSÅR"}</span><h2 id="detail-title">{album.title}</h2><p className="artist-line">{album.artist}</p>
       <p className="detail-thoughts">{album.thoughts || "Inga fler anteckningar om den här – det är bara att lägga på skivan."}</p>
       <div className="detail-scores"><div><small>ALBUMET</small><Score value={album.albumScore} label="Albumbetyg" /></div><div><small>OMSLAGET</small><Score value={album.artworkScore} label="Omslagsbetyg" /></div></div>
       {album.favouriteTrack && <div className="value-row"><div><span>FAVORITLÅT</span><strong>{album.favouriteTrack}</strong></div></div>}
+      <div className="share-action"><button className="button button-quiet" onClick={() => void handleShare()} disabled={preparingShare || sharing || !shareImage}>{preparingShare || sharing ? <LoaderCircle className="spin" size={16} /> : <Share2 size={16} />} Dela albumet</button><span>Välj Instagram i delningsmenyn och lägg till musik där.</span></div>
+      {shareError && <div className="notice" role="alert">{shareError}</div>}
       <div className="detail-date">Tillagd {new Intl.DateTimeFormat("sv-SE", { day: "numeric", month: "long", year: "numeric" }).format(new Date(album.createdAt))}</div>
       {isAdmin && <div className="detail-admin"><button className="button button-quiet" onClick={onEdit}><Pencil size={15} /> Redigera skivan</button><button className="button button-delete" onClick={onDelete}><Trash2 size={15} /> Ta bort</button></div>}
     </div>
