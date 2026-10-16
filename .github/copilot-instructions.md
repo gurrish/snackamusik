@@ -2,7 +2,7 @@
 
 ## Project overview
 
-snackamusik is a personal, public-facing album journal. Visitors can browse records and their cover art, scores, value notes and reviews. Only email addresses configured in `GLOBAL_ADMIN_EMAILS` can create, edit or delete entries. Keep the architecture small and low-cost.
+snackamusik is a personal, public-facing album journal. Visitors can browse records and their cover art, scores, favourite tracks and reviews. Only email addresses configured in `GLOBAL_ADMIN_EMAILS` can create, edit or delete entries. Keep the architecture small and low-cost.
 
 The frontend is React, TypeScript and Vite. The backend is an Azure Functions API integrated with Azure Static Web Apps. Album metadata is persisted in Azure Table Storage; cover images are in a private Azure Blob Storage container. Azure resources are provisioned with Bicep and deployed using GitHub Actions with OIDC.
 

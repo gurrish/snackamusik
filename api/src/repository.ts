@@ -16,10 +16,12 @@ type StoredAlbum = TableEntity<Record<string, unknown>>;
 
 function fromEntity(entity: StoredAlbum): Album {
   const { partitionKey: _partitionKey, rowKey, etag: _etag, timestamp: _timestamp, ...fields } = entity;
+  const { paid: _paid, estimatedValue: _estimatedValue, ...albumFields } = fields;
   return {
-    ...fields,
+    ...albumFields,
     id: rowKey,
     released: typeof fields.released === "number" ? fields.released : null,
+    favouriteTrack: typeof fields.favouriteTrack === "string" ? fields.favouriteTrack : "",
   } as Album;
 }
 

@@ -5,13 +5,9 @@ import type { Album, AlbumInput, Viewer } from "./types";
 
 const blankForm = {
   artist: "", title: "", released: "", format: "Vinyl" as "Vinyl" | "CD",
-  albumScore: 3, artworkScore: 3, paid: "", estimatedValue: "", thoughts: "",
+  albumScore: 3, artworkScore: 3, favouriteTrack: "", thoughts: "",
 };
 const imageLimit = 8 * 1024 * 1024;
-
-function money(value: number) {
-  return new Intl.NumberFormat("sv-SE", { style: "currency", currency: "SEK", maximumFractionDigits: 0 }).format(value);
-}
 
 function Score({ value, label }: { value: number; label: string }) {
   return <span className="score" aria-label={`${label}: ${value} av 5`}>{value.toFixed(value % 1 ? 1 : 0)}<small>/5</small></span>;
@@ -100,8 +96,8 @@ export default function App() {
     setImage(null);
     setForm(album ? {
       artist: album.artist, title: album.title, released: album.released?.toString() ?? "", format: album.format,
-      albumScore: album.albumScore, artworkScore: album.artworkScore, paid: album.paid.toString(),
-      estimatedValue: album.estimatedValue.toString(), thoughts: album.thoughts,
+      albumScore: album.albumScore, artworkScore: album.artworkScore, favouriteTrack: album.favouriteTrack,
+      thoughts: album.thoughts,
     } : blankForm);
     setEditorOpen(true);
   }
@@ -129,8 +125,8 @@ export default function App() {
       const artwork = image ? { name: image.name, contentType: image.type, base64: await readImage(image) } : undefined;
       const input: AlbumInput = {
         artist: form.artist, title: form.title, released: form.released ? Number(form.released) : null, format: form.format,
-        albumScore: form.albumScore, artworkScore: form.artworkScore, paid: Number(form.paid),
-        estimatedValue: Number(form.estimatedValue), thoughts: form.thoughts, ...(artwork ? { artwork } : {}),
+        albumScore: form.albumScore, artworkScore: form.artworkScore, favouriteTrack: form.favouriteTrack,
+        thoughts: form.thoughts, ...(artwork ? { artwork } : {}),
       };
       const saved = editingId ? await updateAlbum(editingId, input) : await createAlbum(input);
       setEditorOpen(false);
@@ -195,7 +191,7 @@ export default function App() {
         <div className="hero-copy">
           <span className="eyebrow"><span className="eyebrow-dot" /> EN PERSONLIG SKIVDAGBOK</span>
           <h1>Bra musik.<br /><em>Snygga omslag.</em><br />Värda ett varv.</h1>
-          <p>Anteckningar från skivhyllan: albumen jag tar med mig hem, omslagen jag inte kan sluta titta på och om fyndet var värt pengarna.</p>
+          <p>Anteckningar från skivhyllan: albumen jag tar med mig hem, omslagen jag inte kan sluta titta på och låtarna jag återvänder till.</p>
           <a className="scroll-link" href="#shelf">Utforska samlingen <ArrowDown size={15} /></a>
         </div>
         <div className="hero-art" aria-hidden="true">
@@ -248,8 +244,7 @@ export default function App() {
       <form onSubmit={(event) => void submitAlbum(event)} className="album-form">
         <label className="upload-zone"><input ref={fileInput} type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => setImage(event.target.files?.[0] ?? null)} /><span className="upload-icon"><Plus size={20} /></span><strong>{image?.name ?? (editingId ? "Välj ett nytt omslag (valfritt)" : "Lägg till ett foto av omslaget")}</strong><small>JPG, PNG eller WebP · högst 8 MB{editingId ? " · lämna tomt för att behålla den nuvarande bilden" : ""}</small></label>
         <div className="form-grid"><label className="form-control"><span>Artist</span><input required maxLength={100} value={form.artist} onChange={(event) => setForm({ ...form, artist: event.target.value })} placeholder="t.ex. Joni Mitchell" /></label><label className="form-control"><span>Albumtitel</span><input required maxLength={120} value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} placeholder="t.ex. Blue" /></label></div>
-        <div className="form-grid thirds"><label className="form-control"><span>Format</span><select value={form.format} onChange={(event) => setForm({ ...form, format: event.target.value as "Vinyl" | "CD" })}><option>Vinyl</option><option>CD</option></select></label><label className="form-control"><span>Utgivningsår</span><input type="number" min="1900" max={new Date().getFullYear() + 1} value={form.released} onChange={(event) => setForm({ ...form, released: event.target.value })} placeholder="Valfritt" /></label><label className="form-control"><span>Vad jag betalade (kr)</span><input required type="number" min="0" max="1000000" step="1" value={form.paid} onChange={(event) => setForm({ ...form, paid: event.target.value })} placeholder="0" /></label></div>
-        <label className="form-control"><span>Vad jag tycker att den är värd (kr)</span><input required type="number" min="0" max="1000000" step="1" value={form.estimatedValue} onChange={(event) => setForm({ ...form, estimatedValue: event.target.value })} placeholder="0" /></label>
+        <div className="form-grid thirds"><label className="form-control"><span>Format</span><select value={form.format} onChange={(event) => setForm({ ...form, format: event.target.value as "Vinyl" | "CD" })}><option>Vinyl</option><option>CD</option></select></label><label className="form-control"><span>Utgivningsår</span><input type="number" min="1900" max={new Date().getFullYear() + 1} value={form.released} onChange={(event) => setForm({ ...form, released: event.target.value })} placeholder="Valfritt" /></label><label className="form-control"><span>Favoritlåt</span><input maxLength={200} value={form.favouriteTrack} onChange={(event) => setForm({ ...form, favouriteTrack: event.target.value })} placeholder="Valfritt" /></label></div>
         <div className="ratings-row"><StarRating label="Albumet" value={form.albumScore} onChange={(albumScore) => setForm({ ...form, albumScore })} /><StarRating label="Omslaget" value={form.artworkScore} onChange={(artworkScore) => setForm({ ...form, artworkScore })} /></div>
         <label className="form-control"><span>Några ord (eller några till)</span><textarea maxLength={3000} rows={5} value={form.thoughts} onChange={(event) => setForm({ ...form, thoughts: event.target.value })} placeholder="Vad är historien bakom skivan? Hur låter, känns och ser den ut?" /></label>
         {error && <div className="notice" role="alert">{error}</div>}
@@ -272,7 +267,7 @@ function AlbumDialog({ album, isAdmin, onClose, onEdit, onDelete }: { album: Alb
     <div className="detail-copy"><span className="eyebrow">{album.format.toUpperCase()} <span className="eyebrow-divider">/</span> {album.released || "OKÄNT UTGIVNINGSÅR"}</span><h2 id="detail-title">{album.title}</h2><p className="artist-line">{album.artist}</p>
       <p className="detail-thoughts">{album.thoughts || "Inga fler anteckningar om den här – det är bara att lägga på skivan."}</p>
       <div className="detail-scores"><div><small>ALBUMET</small><Score value={album.albumScore} label="Albumbetyg" /></div><div><small>OMSLAGET</small><Score value={album.artworkScore} label="Omslagsbetyg" /></div></div>
-      <div className="value-row"><div><span>BETALADE</span><strong>{money(album.paid)}</strong></div><span className="value-arrow"><ArrowRight size={15} /></span><div><span>VÄRD ENLIGT MIG</span><strong>{money(album.estimatedValue)}</strong></div></div>
+      {album.favouriteTrack && <div className="value-row"><div><span>FAVORITLÅT</span><strong>{album.favouriteTrack}</strong></div></div>}
       <div className="detail-date">Tillagd {new Intl.DateTimeFormat("sv-SE", { day: "numeric", month: "long", year: "numeric" }).format(new Date(album.createdAt))}</div>
       {isAdmin && <div className="detail-admin"><button className="button button-quiet" onClick={onEdit}><Pencil size={15} /> Redigera skivan</button><button className="button button-delete" onClick={onDelete}><Trash2 size={15} /> Ta bort</button></div>}
     </div>

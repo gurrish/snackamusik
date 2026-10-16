@@ -6,8 +6,7 @@ export interface Album {
   format: "Vinyl" | "CD";
   albumScore: number;
   artworkScore: number;
-  paid: number;
-  estimatedValue: number;
+  favouriteTrack: string;
   thoughts: string;
   artworkContentType: string;
   artworkName: string;
@@ -22,8 +21,7 @@ export interface AlbumInput {
   format: "Vinyl" | "CD";
   albumScore: number;
   artworkScore: number;
-  paid: number;
-  estimatedValue: number;
+  favouriteTrack: string;
   thoughts: string;
   artwork?: { name: string; contentType: string; base64: string };
 }

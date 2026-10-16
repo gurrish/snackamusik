@@ -13,8 +13,7 @@ const albumFields = {
   format: z.enum(["Vinyl", "CD"]),
   albumScore: z.number().min(0).max(5).multipleOf(0.5),
   artworkScore: z.number().min(0).max(5).multipleOf(0.5),
-  paid: z.number().finite().min(0).max(1_000_000),
-  estimatedValue: z.number().finite().min(0).max(1_000_000),
+  favouriteTrack: z.string().trim().max(200),
   thoughts: z.string().trim().max(3000),
 };
 
@@ -31,8 +30,7 @@ export interface Album {
   format: "Vinyl" | "CD";
   albumScore: number;
   artworkScore: number;
-  paid: number;
-  estimatedValue: number;
+  favouriteTrack: string;
   thoughts: string;
   artworkContentType: string;
   artworkName: string;
